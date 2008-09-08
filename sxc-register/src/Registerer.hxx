@@ -40,17 +40,37 @@ class Registerer
     : public gloox::RegistrationHandler, gloox::ConnectionListener
 {
     public:
-        //void start(gloox::JID jid);/*{{{*/
+        //Registerer(gloox::JID jid, bool pwOnce = false);/*{{{*/
 
         /**
          * @brief Connect to the server.
          *
-         * This function initializes the connection to the server chosen in the
-         * JID and then waits until the connection is closed.
+         * The constructor initializes the connection to the server chosen in
+         * the JID and then waits until the connection is closed.
          *
          * @param jid The JID to register.
          */
-        void start(gloox::JID jid);
+        Registerer(gloox::JID jid, bool pwOnce = false);
+
+/*}}}*/
+        //~Registerer();/*{{{*/
+
+        /**
+         * @brief Clean up.
+         */
+        ~Registerer();
+
+/*}}}*/
+
+        //void run();/*{{{*/
+
+        /**
+         * @brief Run the registration process.
+         *
+         * Connect to the server and initialize the registration. This method
+         * blocks until it is disconnected.
+         */
+        void run();
 
 /*}}}*/
         //const std::string enterPassword(bool retype = false);/*{{{*//*{{{*/
@@ -59,7 +79,9 @@ class Registerer
          * @brief Get a password from stdin.
          *
          * This function waits for interaction from the user to get a password
-         * without showing the entered characters.
+         * without showing the entered characters. If stdin is not connected to
+         * a terminal, it sets @ref _pwOnce to true, so the password only needs
+         * to be entered once.
          *
          * @param retype Whether this is the affirmation of the password.
          * @return The entered password.
@@ -76,32 +98,10 @@ class Registerer
          *
          * @return The entered text.
          */
-        const std::string enterField(std::string text);
+        const std::string enterField(const std::string &text) const;
 
 /*}}}*/
-        //virtual void onConnect();/*{{{*/
 
-        /**
-         * @brief Call @ref fetchRegistrationFields().
-         *
-         * This function gets called after a connection has been established.
-         * It then calls @ref fetchRegistrationFields().
-         */
-        virtual void onConnect();
-
-/*}}}*/
-        //virtual void onDisconnect(gloox::ConnectionError e);/*{{{*/
-
-        /**
-         * @brief Handle the error.
-         *
-         * This function output informations about unwanted disconnections.
-         *
-         * @param e The type of the error that lead to the disconnect.
-         */
-        virtual void onDisconnect(gloox::ConnectionError e);
-
-/*}}}*/
         //virtual void handleRegistrationFields(/*{{{*/
 
         /**
@@ -139,48 +139,92 @@ class Registerer
 
 /*}}}*/
 
-        // Reimplemented, but unused functions./*{{{*/
-        Registerer() {}
-        virtual ~Registerer() {}
-        virtual bool onTLSConnect(const gloox::CertInfo& info) {}
-        virtual void handleAlreadyRegistered(const gloox::JID &from) {}
-        virtual void handleDataForm(
+        //virtual void onConnect();/*{{{*/
+
+        /**
+         * @brief Call @ref fetchRegistrationFields().
+         *
+         * This function gets called after a connection has been established.
+         * It then calls @ref fetchRegistrationFields().
+         */
+        virtual void onConnect();
+
+/*}}}*/
+        //virtual void onDisconnect(gloox::ConnectionError e);/*{{{*/
+
+        /**
+         * @brief Handle the error.
+         *
+         * This function output informations about unwanted disconnections.
+         *
+         * @param e The type of the error that lead to the disconnect.
+         */
+        virtual void onDisconnect(gloox::ConnectionError e);
+
+/*}}}*/
+        //bool onTLSConnect(const gloox::CertInfo& info);/*{{{*/
+
+        /**
+         * @brief Whether to accept the TLS certificate.
+         *
+         * Always accept.
+         *
+         * @param info The Certificate and additional information about it.
+         * @return 'true' to accept, 'false' to cancel connection.
+         */
+        bool onTLSConnect(const gloox::CertInfo& info);
+
+/*}}}*/
+        //void handleAlreadyRegistered(const gloox::JID &from);/*{{{*/
+
+        /**
+         * @brief The wanted jid is already in use.
+         */
+        void handleAlreadyRegistered(const gloox::JID &from);
+
+/*}}}*/
+        //void handleDataForm(const JID &from, const DataForm form);/*{{{*/
+
+        /**
+         */
+        void handleDataForm(
             const gloox::JID &from,
-            const gloox::DataForm &form) {}
-        virtual void handleOOB(
+            const gloox::DataForm &form);
+
+/*}}}*/
+        //void handleOOB(const jid &from, const OOB &oob);/*{{{*/
+
+        /**
+         */
+        void handleOOB(
             const gloox::JID &from,
-            const gloox::OOB &oob) {}/*}}}*/
+            const gloox::OOB &oob);
+
+/*}}}*/
 
     private:
-        //static std::string prefix;/*{{{*/
+        //bool _pwOnce;/*{{{*/
 
-        /// The text printed before every output.
-        static std::string prefix;
-
-/*}}}*/
-        //static std::string registrationPrefix;/*{{{*/
-
-        /// The text printed before every output about the registration.
-        static std::string registrationPrefix;
+        /// Whether to disable the retype of the password.
+        bool _pwOnce;
 
 /*}}}*/
-        //static std::string connectionPrefix;/*{{{*/
-
-        /// The text printed before every output about the connection.
-        static std::string connectionPrefix;
-
-/*}}}*/
-        //gloox::JID *jid;/*{{{*/
+        //const gloox::JID _jid;/*{{{*/
 
         /// The JID to extract the server and the username from.
-        gloox::JID *jid;
+        const gloox::JID _jid;
 
 /*}}}*/
-        //gloox::Registration *registration;/*{{{*/
+        //gloox::Client _client;/*{{{*/
+
+        /// The client.
+        gloox::Client _client;
+
+/*}}}*/
+        //gloox::Registration _registration;/*{{{*/
 
         /// The registration class.
-        gloox::Registration *registration;
-        gloox::Client *client;
+        gloox::Registration *_registration;
 
 /*}}}*/
 };

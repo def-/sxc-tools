@@ -26,6 +26,8 @@
 #include <gloox/connectionlistener.h>
 #include <gloox/registration.h>
 
+#include <libsxc/generateString.hxx>
+
 #include <iostream>
 #include <string>
 #include <cstdio> // stdin
@@ -42,36 +44,28 @@
 /*}}}*/
 
 
-std::string Registerer::prefix = "sxc-register: ";
-std::string Registerer::registrationPrefix = "Registration: ";
-std::string Registerer::connectionPrefix = "Connection: ";
-
-void Registerer::start(gloox::JID newJid)/*{{{*/
+Registerer::Registerer(gloox::JID jid, bool pwOnce)/*{{{*/
+: _pwOnce(pwOnce),
+  _jid(jid),
+  _client(jid.server())
 {
-    jid = new gloox::JID(newJid);
+    _client.disableRoster();
+    _client.registerConnectionListener(this);
 
-    client = new gloox::Client(jid->server());
-    client->disableRoster();
-    client->registerConnectionListener(this);
+    _registration = new gloox::Registration(&_client);
+    _registration->registerRegistrationHandler(this);
+}/*}}}*/
+Registerer::~Registerer()/*{{{*/
+{
+    _client.disconnect();
 
-    registration = new gloox::Registration(client);
-    registration->registerRegistrationHandler(this);
-
-    client->connect(); // Blocking connection.
-
-    delete jid;
-    delete registration;
-    delete client;
+    delete _registration;
 }/*}}}*/
 
-const std::string Registerer::enterField(std::string text)/*{{{*/
+void Registerer::run()/*{{{*/
 {
-    std::string response;
-    std::cerr << text << ": " << std::flush;
-    getline(std::cin, response);
-    return response;
+    _client.connect(); // Blocking connection.
 }/*}}}*/
-
 const std::string Registerer::enterPassword(bool retype)/*{{{*/
 {
     struct termios savedTermState;
@@ -91,99 +85,28 @@ const std::string Registerer::enterPassword(bool retype)/*{{{*/
 
         // Verify that echo suppression is supported.
         if (newTermState.c_lflag & ECHO)
-            throw std::runtime_error(std::string("Verify: unable to suppress echo"));
-
-        // Prompt the user for a password.
-        std::cerr << (retype ? "Retype Password: " : "Password: ") << std::flush;
-        getline(std::cin, password);
-        //std::cin >> password;
-
-        // Restore the terminal state.
-        tcsetattr(fileno(stdin), TCSANOW, &savedTermState);
-        std::cerr << std::endl;
+            throw std::runtime_error("Verify: unable to suppress echo");
     } catch (...) {
-        // Restore the terminal state.
-        tcsetattr(fileno(stdin), TCSANOW, &savedTermState);
-
-        printErr("Entering password failed.");
-        exit(1);
+        printErr("Securing the terminal failed.");
+        _pwOnce = true; // Don't ask to retype.
     }
+
+    // Prompt the user for a password.
+    std::cerr << (retype ? "Retype Password: " : "Password: ") << std::flush;
+    getline(std::cin, password);
+
+    // Restore the terminal state.
+    tcsetattr(fileno(stdin), TCSANOW, &savedTermState);
+    std::cerr << std::endl;
 
     return password;
 }/*}}}*/
-
-void Registerer::onConnect()/*{{{*/
+const std::string Registerer::enterField(const std::string &text) const/*{{{*/
 {
-    // Request the registration fields the server requires.
-    registration->fetchRegistrationFields();
-}/*}}}*/
-
-void Registerer::onDisconnect(gloox::ConnectionError e)/*{{{*/
-{
-    std::string text;
-
-    switch (e) {
-    case gloox::ConnNoError:
-        break;
-    case gloox::ConnStreamError:
-        text = "A stream error occured. The stream has been closed";
-        // TODO: Add stream errors.
-        break;
-    case gloox::ConnStreamVersionError:
-        text = "The incoming stream's version is not supported.";
-        break;
-    case gloox::ConnStreamClosed:
-        text = "The stream has been closed by the server.";
-        break;
-    case gloox::ConnProxyAuthRequired:
-        text = "The HTTP/SOCKS5 proxy requires authentication.";
-        break;
-    case gloox::ConnProxyAuthFailed:
-        text = "The HTTP/SOCKS5 proxy authentication failed.";
-        break;
-    case gloox::ConnProxyNoSupportedAuth:
-        text = "The HTTP/SOCKS5 proxy requires an unsupported auth mechanism.";
-        break;
-    case gloox::ConnIoError:
-        text = "An I/O error occured.";
-        break;
-    case gloox::ConnParseError:
-        text = "An XML parse error occured.";
-        break;
-    case gloox::ConnConnectionRefused:
-        text = "The connection was refused by the server (on the socket "
-               "level).";
-        break;
-    case gloox::ConnDnsError:
-        text = "Resolving the server's hostname failed.";
-        break;
-    case gloox::ConnOutOfMemory:
-        text = "Out of memory.";
-        break;
-    case gloox::ConnNoSupportedAuth:
-        text = "The auth mechanisms the server offers are not supported or "
-               "the server offered no auth mechanisms at all.";
-        break;
-    case gloox::ConnTlsFailed:
-        text = "The server's certificate could not be verified or the TLS "
-               "handshake did not complete successfully.";
-        break;
-    case gloox::ConnTlsNotAvailable:
-        text = "The server doesn't offer TLS.";
-        break;
-    case gloox::ConnCompressionFailed:
-        text = "Negotiating or initializing compression failed.";
-        break;
-    case gloox::ConnUserDisconnected:
-        // The user (or higher-level protocol) requested a disconnect.
-        break;
-    case gloox::ConnNotConnected:
-        text = "There is no active connection.";
-        break;
-    }
-
-    if (!text.empty())
-        printErr(connectionPrefix + text);
+    std::string response;
+    std::cerr << text << ": " << std::flush;
+    getline(std::cin, response);
+    return response;
 }/*}}}*/
 
 void Registerer::handleRegistrationFields(/*{{{*/
@@ -194,7 +117,7 @@ void Registerer::handleRegistrationFields(/*{{{*/
     gloox::RegistrationFields values;
 
     if (fields & gloox::Registration::FieldUsername)
-        values.username = jid->username();
+        values.username = _jid.username();
 
     // Get additional fields from stdin./*{{{*/
     if (fields & gloox::Registration::FieldNick)
@@ -241,19 +164,16 @@ void Registerer::handleRegistrationFields(/*{{{*/
 /*}}}*/
 
     if (fields & gloox::Registration::FieldPassword) {
-        std::string password;
         while (true) {
-            password = enterPassword();
-            values.password = enterPassword(true);
-        if (password == values.password)
-            break;
+            values.password = enterPassword();
+            if (_pwOnce || enterPassword(true) == values.password)
+                    break;
         std::cerr << "Mismatch, try again." << std::endl;
         }
     }
 
-    registration->createAccount(fields, values);
+    _registration->createAccount(fields, values);
 }/*}}}*/
-
 void Registerer::handleRegistrationResult(/*{{{*/
     const gloox::JID &from,
     gloox::RegistrationResult result)
@@ -288,8 +208,44 @@ void Registerer::handleRegistrationResult(/*{{{*/
     }
 
     if (!text.empty())
-        printErr(registrationPrefix + text);
+        printErr("Registration: " + text);
 
-    client->disconnect();
+    _client.disconnect();
     exit(result); // Exit the program.
 }/*}}}*/
+
+void Registerer::onConnect()/*{{{*/
+{
+    // Request the registration fields the server requires.
+    _registration->fetchRegistrationFields();
+}/*}}}*/
+void Registerer::onDisconnect(gloox::ConnectionError e)/*{{{*/
+{
+    std::string &text = libsxc::genConnErrorString(
+        e,
+        _client.streamError(),
+        _client.streamErrorText(),
+        _client.authError());
+    if (!text.empty())
+        printErr("Disconnected: " + text);
+}/*}}}*/
+    bool Registerer::onTLSConnect(const gloox::CertInfo& info)/*{{{*/
+    {
+        return true;
+    }/*}}}*/
+    void Registerer::handleAlreadyRegistered(const gloox::JID &from)/*{{{*/
+    {
+    }/*}}}*/
+    void Registerer::handleDataForm(/*{{{*/
+        const gloox::JID &from,
+        const gloox::DataForm &form)
+    {
+    }/*}}}*/
+    void Registerer::handleOOB(/*{{{*/
+        const gloox::JID &from,
+        const gloox::OOB &oob)
+    {
+    }/*}}}*/
+
+// Use no tabs at all; four spaces indentation; max. eighty chars per line.
+// vim: et ts=4 sw=4 tw=80 fo+=c fdm=marker

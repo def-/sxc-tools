@@ -29,6 +29,9 @@
 
 // INCLUDE/*{{{*/
 
+#include <string>
+#include <iostream>
+
 #include <gloox/jid.h>
 
 #include <libsxc/Option/Parser.hxx>
@@ -54,24 +57,49 @@
 int main(int argc, char *argv[])/*{{{*/
 {
     libsxc::Option::Parser parser;
+    libsxc::Option::Option<bool> defHelp(
+        &parser, 'h', "help", "Show help and exit");
+    libsxc::Option::Option<bool> defVersion(
+        &parser, 'V', "version", "Show version and exit");
     libsxc::Option::OptionPort port(
         &parser, 'p', "port", "port", "0 - 65535, -1 for default");
+    libsxc::Option::Option<bool> pwOnce(
+        &parser, 'o', "once", "Type password once (disable retype)");
+    libsxc::Option::Option<std::string> password(
+        &parser, 'P', "password", "password", "Password", "");
     libsxc::Option::Option<gloox::JID> jid(
         &parser, ' ', "", "jid", "user@domain[/resource]");
 
     try {
         parser.parse(argv);
-    } catch (libsxc::Exception::Exception &e) {
-        printErr(e.getDescription());
+    } catch (libsxc::Exception::OptionException &e) {
+        if (libsxc::Exception::ShowUsage == e.getType()) {
+            std::cerr << PACKAGE << " " << VERSION << " (C) " << COPYRIGHT
+                      << std::endl;
+        } else if (libsxc::Exception::ShowVersion == e.getType()) {
+            std::cerr << VERSION << std::endl;
+            return libsxc::Exception::NoError;
+        } else {
+            printErr(e.getDescription());
+        }
 
         std::vector<std::string> usage = parser.getUsage();
-        for_each(usage.begin(), usage.end(), printErr);
+        for(
+        std::vector<std::string>::iterator line = usage.begin();
+        line != usage.end();
+        ++line)
+            std::cerr << *line << std::endl;
 
+        if (e.getType() < 0) // No error. (ShowUsage, ShowVersion)
+            return libsxc::Exception::NoError;
+        return e.getType();
+    } catch (libsxc::Exception::Exception &e) {
+        printErr(e.getDescription());
         return e.getType();
     }
 
-    Registerer registrator;
-    registrator.start(jid.getValue());
+    Registerer registerer(jid.getValue(), pwOnce.getValue());
+    registerer.run();
 
     return 0;
 }/*}}}*/
