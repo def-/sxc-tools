@@ -27,6 +27,7 @@
 #include <gloox/registration.h>
 
 #include <libsxc/generateString.hxx>
+#include <libsxc/Exception/Type.hxx>
 
 #include <iostream>
 #include <string>
@@ -41,11 +42,16 @@
 #include <print.hxx>
 #include <Registerer.hxx>
 
+#ifdef HAVE_CONFIG_H
+#   include <config.hxx>
+#endif
+
 /*}}}*/
 
 
 Registerer::Registerer(gloox::JID jid, bool pwOnce)/*{{{*/
 : _pwOnce(pwOnce),
+  _isTerm(true),
   _jid(jid),
   _client(jid.server())
 {
@@ -87,12 +93,20 @@ const std::string Registerer::enterPassword(bool retype)/*{{{*/
         if (newTermState.c_lflag & ECHO)
             throw std::runtime_error("Verify: unable to suppress echo");
     } catch (...) {
-        printErr("Securing the terminal failed.");
+#       ifdef DEBUG
+            printLog("Securing the terminal failed, assuming no terminal.");
+#       endif
+
         _pwOnce = true; // Don't ask to retype.
+        _isTerm = false;
+
+        getline(std::cin, password);
+        return password;
     }
 
     // Prompt the user for a password.
-    std::cerr << (retype ? "Retype Password: " : "Password: ") << std::flush;
+    std::cerr << "sxc-register: "
+              << (retype ? "Retype Password: " : "Password: ") << std::flush;
     getline(std::cin, password);
 
     // Restore the terminal state.
@@ -101,14 +115,6 @@ const std::string Registerer::enterPassword(bool retype)/*{{{*/
 
     return password;
 }/*}}}*/
-const std::string Registerer::enterField(const std::string &text) const/*{{{*/
-{
-    std::string response;
-    std::cerr << text << ": " << std::flush;
-    getline(std::cin, response);
-    return response;
-}/*}}}*/
-
 void Registerer::handleRegistrationFields(/*{{{*/
     const gloox::JID &from,
     int fields,
@@ -119,56 +125,19 @@ void Registerer::handleRegistrationFields(/*{{{*/
     if (fields & gloox::Registration::FieldUsername)
         values.username = _jid.username();
 
-    // Get additional fields from stdin./*{{{*/
-    if (fields & gloox::Registration::FieldNick)
-        values.nick = enterField("Nick");
-
-    if (fields & gloox::Registration::FieldName)
-        values.name = enterField("Name");
-
-    if (fields & gloox::Registration::FieldFirst)
-        values.first = enterField("First");
-
-    if (fields & gloox::Registration::FieldLast)
-        values.last = enterField("Last");
-
-    if (fields & gloox::Registration::FieldEmail)
-        values.email = enterField("Email");
-
-    if (fields & gloox::Registration::FieldAddress)
-        values.address = enterField("Address");
-
-    if (fields & gloox::Registration::FieldCity)
-        values.city = enterField("City");
-
-    if (fields & gloox::Registration::FieldState)
-        values.state = enterField("State");
-
-    if (fields & gloox::Registration::FieldZip)
-        values.zip = enterField("Zip");
-
-    if (fields & gloox::Registration::FieldPhone)
-        values.phone = enterField("Phone");
-
-    if (fields & gloox::Registration::FieldUrl)
-        values.url = enterField("Url");
-
-    if (fields & gloox::Registration::FieldDate)
-        values.date = enterField("Date");
-
-    if (fields & gloox::Registration::FieldMisc)
-        values.misc = enterField("Misc");
-
-    if (fields & gloox::Registration::FieldText)
-        values.text = enterField("Text");
-/*}}}*/
-
     if (fields & gloox::Registration::FieldPassword) {
         while (true) {
             values.password = enterPassword();
-            if (_pwOnce || enterPassword(true) == values.password)
-                    break;
-        std::cerr << "Mismatch, try again." << std::endl;
+
+            if (values.password == "") {
+                printErr("Empty password not allowed.");
+                if (!_isTerm)
+                    exit(libsxc::Exception::Registration);
+            } else if (_pwOnce || enterPassword(true) == values.password) {
+                break;
+            } else {
+                printErr("Mismatch, try again.");
+            }
         }
     }
 

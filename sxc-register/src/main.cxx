@@ -1,10 +1,3 @@
-/**
- * TODO:
- * - Make the registration work with additional information (stdin or
- *   parameters)
- * - How about ['sexy] exceptions?
- */
-
 // LICENSE/*{{{*/
 /*
   sxc - Simple Xmpp Client
@@ -46,14 +39,12 @@
 
 
 /**
- * @file main.cpp
  * @author Dennis Felsing
  * @brief The starting point of sxc-register.
  *
  * Create a JID object from the parameter and start the registration process by
  * running @ref Registerer.
  */
-
 int main(int argc, char *argv[])/*{{{*/
 {
     libsxc::Option::Parser parser;
@@ -65,8 +56,6 @@ int main(int argc, char *argv[])/*{{{*/
         &parser, 'p', "port", "port", "0 - 65535, -1 for default");
     libsxc::Option::Option<bool> pwOnce(
         &parser, 'o', "once", "Type password once (disable retype)");
-    libsxc::Option::Option<std::string> password(
-        &parser, 'P', "password", "password", "Password", "");
     libsxc::Option::Option<gloox::JID> jid(
         &parser, ' ', "", "jid", "user@domain[/resource]");
 

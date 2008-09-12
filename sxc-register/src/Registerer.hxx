@@ -209,6 +209,12 @@ class Registerer
         bool _pwOnce;
 
 /*}}}*/
+        //bool _isTerm;/*{{{*/
+
+        /// Whether the input is a terminal.
+        bool _isTerm;
+
+/*}}}*/
         //const gloox::JID _jid;/*{{{*/
 
         /// The JID to extract the server and the username from.
