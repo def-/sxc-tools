@@ -221,7 +221,7 @@ void Registerer::onConnect()/*{{{*/
 }/*}}}*/
 void Registerer::onDisconnect(gloox::ConnectionError e)/*{{{*/
 {
-    std::string &text = libsxc::genConnErrorString(
+    std::string text = libsxc::genConnErrorString(
         e,
         _client.streamError(),
         _client.streamErrorText(),
