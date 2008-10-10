@@ -38,7 +38,6 @@
 
 
 /**
- * @author Dennis Felsing
  * @brief The starting point of sxc-register.
  *
  * Create a JID object from the parameter and start the registration process by
