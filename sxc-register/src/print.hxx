@@ -1,6 +1,6 @@
 // LICENSE/*{{{*/
 /*
-  sxc - Simple Xmpp Client
+  sxc-tools
   Copyright (C) 2008 Dennis Felsing, Andreas Waidler
 
   Permission to use, copy, modify, and/or distribute this software for any
