@@ -36,12 +36,12 @@ const std::string _outputPrefix = "sxc-register: ";
 
 void printErr(std::string text)/*{{{*/
 {
-    std::cerr << _outputPrefix << text << std::endl;
+  std::cerr << _outputPrefix << text << std::endl;
 }/*}}}*/
 
 void printLog(std::string text)/*{{{*/
 {
-    std::clog << _outputPrefix << text << std::endl;
+  std::clog << _outputPrefix << text << std::endl;
 }/*}}}*/
 
 // Use no tabs at all; two spaces indentation; max. eighty chars per line.
