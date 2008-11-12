@@ -37,15 +37,18 @@
 #include <string.h> // strerror()
 #include <errno.h> // errno
 
-#include <print.hxx>
 #include <Registerer.hxx>
 
 #ifdef HAVE_CONFIG_H
 # include <config.hxx>
 #endif
 
+#include <libsxc/Logger.hxx>
+
 /*}}}*/
 
+using libsxc::Debug;
+using libsxc::Error;
 
 Registerer::Registerer(gloox::JID jid, bool pwOnce)/*{{{*/
 : _pwOnce(pwOnce),
@@ -91,9 +94,7 @@ const std::string Registerer::enterPassword(bool retype)/*{{{*/
     if (newTermState.c_lflag & ECHO)
       throw std::runtime_error("Verify: unable to suppress echo");
   } catch (...) {
-#   ifdef DEBUG
-      printLog("Securing the terminal failed, assuming no terminal.");
-#   endif
+    LOG<Debug>("Securing the terminal failed, assuming no terminal.");
 
     _pwOnce = true; // Don't ask to retype.
     _isTerm = false;
@@ -128,13 +129,13 @@ void Registerer::handleRegistrationFields(/*{{{*/
       values.password = enterPassword();
 
       if (values.password == "") {
-        printErr("Empty password not allowed.");
+        LOG<Error>("Empty password not allowed.");
         if (!_isTerm)
           exit(libsxc::Exception::Registration);
       } else if (_pwOnce || enterPassword(true) == values.password) {
         break;
       } else {
-        printErr("Mismatch, try again.");
+        LOG<Error>("Mismatch, try again.");
       }
     }
   }
@@ -175,7 +176,7 @@ void Registerer::handleRegistrationResult(/*{{{*/
   }
 
   if (!text.empty())
-    printErr("Registration: " + text);
+    LOG<Error>("Registration: " + text);
 
   _client.disconnect();
   exit(result); // Exit the program.
@@ -194,7 +195,7 @@ void Registerer::onDisconnect(gloox::ConnectionError e)/*{{{*/
     _client.streamErrorText(),
     _client.authError());
   if (!text.empty())
-    printErr("Disconnected: " + text);
+    LOG<Error>("Disconnected: " + text);
 }/*}}}*/
   bool Registerer::onTLSConnect(const gloox::CertInfo& info)/*{{{*/
   {

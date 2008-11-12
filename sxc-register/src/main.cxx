@@ -31,10 +31,16 @@
 #include <libsxc/Exception/Exception.hxx>
 
 #include <Registerer.hxx>
-#include <print.hxx>
+
+#ifdef HAVE_CONFIG_H
+# include <config.hxx>
+#endif
+
+#include <libsxc/Logger.hxx>
 
 /*}}}*/
 
+using libsxc::Error;
 
 /**
  * @brief The starting point of sxc-register.
@@ -66,7 +72,7 @@ int main(int argc, char *argv[])/*{{{*/
       std::cerr << VERSION << std::endl;
       return libsxc::Exception::NoError;
     } else {
-      printErr(e.getDescription());
+      LOG<Error>(e.getDescription());
     }
 
     std::vector<std::string> usage = parser.getUsage();
@@ -80,7 +86,7 @@ int main(int argc, char *argv[])/*{{{*/
       return libsxc::Exception::NoError;
     return e.getType();
   } catch (libsxc::Exception::Exception &e) {
-    printErr(e.getDescription());
+    LOG<Error>(e.getDescription());
     return e.getType();
   }
 
