@@ -29,6 +29,7 @@
 #include <libsxc/Option/Option.hxx>
 #include <libsxc/Option/OptionPort.hxx>
 #include <libsxc/Exception/Exception.hxx>
+#include <libsxc/Exit/Code.hxx>
 
 #include <Registerer.hxx>
 
@@ -36,11 +37,7 @@
 # include <config.hxx>
 #endif
 
-#include <libsxc/Logger.hxx>
-
 /*}}}*/
-
-using libsxc::Error;
 
 /**
  * @brief The starting point of sxc-register.
@@ -64,30 +61,33 @@ int main(int argc, char *argv[])/*{{{*/
 
   try {
     parser.parse(argv);
-  } catch (libsxc::Exception::OptionException &e) {
-    if (libsxc::Exception::ShowUsage == e.getType()) {
-      std::cerr << PACKAGE << " " << VERSION << " (C) " << COPYRIGHT
-            << std::endl;
-    } else if (libsxc::Exception::ShowVersion == e.getType()) {
-      std::cerr << VERSION << std::endl;
-      return libsxc::Exception::NoError;
-    } else {
-      LOG<Error>(e.getDescription());
-    }
+  } catch (libsxc::Exception::Exception &e) {
+    std::cerr << e.what() << std::endl;
+    return e.getExitCode();
+  } catch(std::exception &e) {
+    std::cerr << e.what() << std::endl;
+    return libsxc::Exit::General;
+  } catch(...) {
+    std::cerr << "Unexpected error parsing options." << std::endl;
+    return libsxc::Exit::General;
+  }
+
+  if (parser.doShowHelp()) {
+    std::cerr << PACKAGE " " VERSION " (C) " COPYRIGHT << std::endl;
 
     std::vector<std::string> usage = parser.getUsage();
     for(
-    std::vector<std::string>::iterator line = usage.begin();
-    line != usage.end();
-    ++line)
-      std::cerr << *line << std::endl;
+    std::vector<std::string>::iterator it = usage.begin();
+    usage.end() != it;
+    ++it) {
+      std::cerr << *it << std::endl;
+    }
+    return libsxc::Exit::NoError;
+  }
 
-    if (e.getType() < 0) // No error. (ShowUsage, ShowVersion)
-      return libsxc::Exception::NoError;
-    return e.getType();
-  } catch (libsxc::Exception::Exception &e) {
-    LOG<Error>(e.getDescription());
-    return e.getType();
+  if (parser.doShowVersion()) {
+    std::cerr << VERSION << std::endl;
+    return libsxc::Exit::NoError;
   }
 
   Registerer registerer(jid.getValue(), pwOnce.getValue());

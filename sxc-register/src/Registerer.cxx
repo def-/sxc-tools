@@ -25,7 +25,6 @@
 #include <gloox/registration.h>
 
 #include <libsxc/generateString.hxx>
-#include <libsxc/Exception/Type.hxx>
 
 #include <iostream>
 #include <string>
@@ -43,12 +42,9 @@
 # include <config.hxx>
 #endif
 
-#include <libsxc/Logger.hxx>
+#include <libsxc/Debug/Logger.hxx>
 
 /*}}}*/
-
-using libsxc::Debug;
-using libsxc::Error;
 
 Registerer::Registerer(gloox::JID jid, bool pwOnce)/*{{{*/
 : _pwOnce(pwOnce),
@@ -94,7 +90,7 @@ const std::string Registerer::enterPassword(bool retype)/*{{{*/
     if (newTermState.c_lflag & ECHO)
       throw std::runtime_error("Verify: unable to suppress echo");
   } catch (...) {
-    LOG<Debug>("Securing the terminal failed, assuming no terminal.");
+    LOG("Securing the terminal failed, assuming no terminal.");
 
     _pwOnce = true; // Don't ask to retype.
     _isTerm = false;
@@ -104,8 +100,7 @@ const std::string Registerer::enterPassword(bool retype)/*{{{*/
   }
 
   // Prompt the user for a password.
-  std::cerr << "sxc-register: "
-        << (retype ? "Retype Password: " : "Password: ") << std::flush;
+  std::cerr << (retype ? "Retype Password: " : "Password: ") << std::flush;
   getline(std::cin, password);
 
   // Restore the terminal state.
@@ -129,13 +124,13 @@ void Registerer::handleRegistrationFields(/*{{{*/
       values.password = enterPassword();
 
       if (values.password == "") {
-        LOG<Error>("Empty password not allowed.");
+        std::cerr << "Empty password not allowed." << std::endl;
         if (!_isTerm)
-          exit(libsxc::Exception::Registration);
+          throw "NoTerminal"; //Exception::NoTerminal();
       } else if (_pwOnce || enterPassword(true) == values.password) {
         break;
       } else {
-        LOG<Error>("Mismatch, try again.");
+        std::cerr << "Mismatch, try again." << std::endl;
       }
     }
   }
@@ -175,8 +170,7 @@ void Registerer::handleRegistrationResult(/*{{{*/
     break;
   }
 
-  if (!text.empty())
-    LOG<Error>("Registration: " + text);
+  std::cerr << "Registration: " << text << std::endl;
 
   _client.disconnect();
   exit(result); // Exit the program.
@@ -195,7 +189,7 @@ void Registerer::onDisconnect(gloox::ConnectionError e)/*{{{*/
     _client.streamErrorText(),
     _client.authError());
   if (!text.empty())
-    LOG<Error>("Disconnected: " + text);
+    std::cerr << "Disconnected: " << text << std::cerr;
 }/*}}}*/
   bool Registerer::onTLSConnect(const gloox::CertInfo& info)/*{{{*/
   {
