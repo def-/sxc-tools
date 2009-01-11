@@ -253,6 +253,8 @@ AC_CONFIG_FILES([
     sxc-register/src/Makefile
     sxc-vcard-set/Makefile
     sxc-vcard-set/src/Makefile
+    sxc-vcard-get/Makefile
+    sxc-vcard-get/src/Makefile
 ])#}}}
 
 AC_OUTPUT#{{{
