@@ -2,3 +2,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = sxc-register sxc-vcard-set sxc-vcard-get
+
+doxygen:
+	doxygen
