@@ -251,6 +251,8 @@ AC_CONFIG_FILES([
     Makefile
     sxc-register/Makefile
     sxc-register/src/Makefile
+    sxc-vcard-set/Makefile
+    sxc-vcard-set/src/Makefile
 ])#}}}
 
 AC_OUTPUT#{{{
