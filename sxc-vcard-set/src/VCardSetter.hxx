@@ -43,10 +43,9 @@ class LogHandler : public gloox::LogHandler
 
 
 /**
- * @brief Get a VCard and print it.
+ * @brief Set a VCard.
  *
- * This class logs in to a server and then sends a VCard fetch request. The
- * VCard is then printed to stdout.
+ * This class logs in to a server and then sends a VCard specified as a stream.
  */
 class VCardSetter : public gloox::VCardHandler, gloox::ConnectionListener
 {
