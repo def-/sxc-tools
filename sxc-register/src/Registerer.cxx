@@ -46,7 +46,7 @@
 
 /*}}}*/
 
-Registerer::Registerer(gloox::JID jid, bool pwOnce)/*{{{*/
+Registerer::Registerer(gloox::JID jid, int port, bool pwOnce)/*{{{*/
 : _pwOnce(pwOnce),
   _isTerm(true),
   _jid(jid),
@@ -54,6 +54,7 @@ Registerer::Registerer(gloox::JID jid, bool pwOnce)/*{{{*/
 {
   _client.disableRoster();
   _client.registerConnectionListener(this);
+  _client.setPort(port);
 
   _registration = new gloox::Registration(&_client);
   _registration->registerRegistrationHandler(this);

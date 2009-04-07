@@ -90,7 +90,7 @@ int main(int argc, char *argv[])/*{{{*/
     return libsxc::Exit::NoError;
   }
 
-  Registerer registerer(jid.getValue(), pwOnce.getValue());
+  Registerer registerer(jid.getValue(), port.getValue(), pwOnce.getValue());
   registerer.run();
 
   return 0;

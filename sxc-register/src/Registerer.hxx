@@ -37,7 +37,7 @@ class Registerer
   : public gloox::RegistrationHandler, gloox::ConnectionListener
 {
   public:
-    //Registerer(gloox::JID jid, bool pwOnce = false);/*{{{*/
+    //Registerer(gloox::JID jid, int port = -1, bool pwOnce = false);/*{{{*/
 
     /**
      * @brief Connect to the server.
@@ -47,7 +47,7 @@ class Registerer
      *
      * @param jid The JID to register.
      */
-    Registerer(gloox::JID jid, bool pwOnce = false);
+    Registerer(gloox::JID jid, int port = -1, bool pwOnce = false);
 
 /*}}}*/
     //~Registerer();/*{{{*/
