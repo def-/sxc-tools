@@ -35,6 +35,7 @@
 #include <stdio.h> // fileno()
 #include <string.h> // strerror()
 #include <errno.h> // errno
+#include <unistd.h>
 
 #include <Registerer.hxx>
 
