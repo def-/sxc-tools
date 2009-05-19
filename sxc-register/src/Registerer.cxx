@@ -36,6 +36,7 @@
 #include <string.h> // strerror()
 #include <errno.h> // errno
 #include <unistd.h>
+#include <stdlib.h>
 
 #include <Registerer.hxx>
 
